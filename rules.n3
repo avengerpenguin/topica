@@ -1,0 +1,20 @@
+@prefix topica:         <http://example.com/topica/> .
+@prefix rdfs:           <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dbpedia-owl:    <http://dbpedia.org/ontology/> .
+@prefix schema:         <http://schema.org/> .
+@prefix rnews:          <http://iptc.org/std/rNews/2011-10-07#> .
+@prefix og:             <http://ogp.me/ns#> .
+@prefix og2:            <http://opengraphprotocol.org/schema/> .
+@prefix dcterms:        <http://purl.org/dc/terms/> .
+@prefix po:             <http://purl.org/ontology/po/> .
+@prefix foaf:           <http://xmlns.com/foaf/0.1/> .
+@prefix md:             <http://www.w3.org/ns/md#> .
+@prefix rdf:            <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix hrecipe:        <http://vocab.sindice.net/any23#hrecipe/> .
+@prefix owl:            <http://www.w3.org/2002/07/owl#> .
+@prefix meta:           <http://example.com/meta/> .
+
+{ ?x rnews:headline        ?y } => { ?x topica:title       ?y } .
+{ ?x og:title              ?y } => { ?x topica:title       ?y } .
+{ ?x schema:name           ?y } => { ?x topica:title       ?y } .
+{ ?x rdfs:label            ?y } => { ?x topica:title       ?y } .

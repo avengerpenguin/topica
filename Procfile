@@ -1,1 +1,1 @@
-web: gunicorn cardy:app --log-file=-
+web: gunicorn topica:application --log-file=-
