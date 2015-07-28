@@ -1,6 +1,15 @@
 from django.db import models
+from rdflib import URIRef
 from rdflib_django import utils
 
+
+class Tag(dict):
+    def __init__(self, iri, name):
+        self['iri'] = iri
+        self['name'] = name
+
+    def __hash__(self):
+        return hash(self['iri'] + self['name'])
 
 class Item(models.Model):
     iri = models.CharField(max_length=255, unique=True)
@@ -22,14 +31,16 @@ class Item(models.Model):
         return thing
 
     def get_tags(self):
-        return {dict(name=row.name, iri=row.iri) for row in self.graph.query(
+        return {Tag(name=str(row.name), iri=str(row.iri)) for row in self.graph.query(
             """
+            PREFIX topica: <http://example.com/topica/>
+
             SELECT DISTINCT ?iri ?name
             WHERE {
-                ?entity topica:tag ?iri
-                ?iri rdfs:label ?name
+                ?entity topica:tag ?iri .
+                ?iri rdfs:label ?name .
             }
-            """, initBindings={'entity': self._entity._id})}
+            """, initBindings={'entity': URIRef(self.iri)})}
 
     def get_distance(self, item):
         my_tags = self.get_tags()
