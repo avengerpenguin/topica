@@ -61,10 +61,13 @@ class Item(models.Model):
             self.cluster = cluster
         super(Item, self).save(*args, **kwargs)
 
+    def __str__(self):
+        return self.iri
+
 
 class Cluster(models.Model):
     def linkage(self, cluster):
-        return max({a.get_distance(b) for a in self.items for b in cluster.items})
+        return max({a.get_distance(b) for a in self.item_set.all() for b in cluster.item_set.all()})
 
     @classmethod
     def agglomerate(cls):
@@ -72,7 +75,15 @@ class Cluster(models.Model):
                               for a in Cluster.objects.all()
                               for b in Cluster.objects.all()
                               if not a == b],
-                             lambda pair: pair[0].linkage(pair[1])
+                             lambda pair1, pair2: pair1[0].linkage(pair1[1]) <= pair2[0].linkage(pair2[1])
                              )[0]
 
-        print two_nearest[0].linkage(two_nearest[1])
+        for item in two_nearest[1].item_set.all():
+            item.cluster = two_nearest[0]
+            item.save()
+
+        assert two_nearest[1].item_set.count() == 0
+        two_nearest[1].delete()
+
+    def __str__(self):
+        return 'cluster-' + str(self.pk)

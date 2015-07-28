@@ -2,7 +2,7 @@ import re
 import pytest
 import testypie
 import httpretty
-from rdflib import URIRef, RDF, Literal, Namespace, RDFS
+from rdflib import URIRef, RDF, Literal, Namespace, RDFS, ConjunctiveGraph
 from topica.models import Item, Tag
 
 
@@ -127,32 +127,8 @@ def test_distance_between_overlapping_items():
 
 
 @pytest.mark.django_db
-def test_distance_between_distinct_items():
-    from rdflib_django import utils
-    g1 = utils.get_named_graph('http://dbpedia.org/resource/Scotland')
-    g1.add((URIRef('http://dbpedia.org/resource/Scotland'), TOPICA.tag, URIRef('http://dbpedia.org/resource/Robert_Burns')))
-    g1.add((URIRef('http://dbpedia.org/resource/Robert_Burns'), RDFS.label, Literal('Robert Burns')))
-    g1.add((URIRef('http://dbpedia.org/resource/Scotland'), TOPICA.tag, URIRef('http://dbpedia.org/resource/United_Kingdom')))
-    g1.add((URIRef('http://dbpedia.org/resource/United_Kingdom'), RDFS.label, Literal('United Kingdom')))
-
-    g2 = utils.get_named_graph('http://dbpedia.org/resource/Goat')
-    g2.add((URIRef('http://dbpedia.org/resource/Goat'), TOPICA.tag, URIRef('http://dbpedia.org/resource/Horns')))
-    g2.add((URIRef('http://dbpedia.org/resource/Horns'), RDFS.label, Literal('Horns')))
-    g2.add((URIRef('http://dbpedia.org/resource/Goat'), TOPICA.tag, URIRef('http://dbpedia.org/resource/Milk')))
-    g2.add((URIRef('http://dbpedia.org/resource/Milk'), RDFS.label, Literal('Milk')))
-
-    item1 = Item(iri='http://dbpedia.org/resource/Scotland')
-    item1.save()
-    item2 = Item(iri='http://dbpedia.org/resource/Goat')
-    item2.save()
-
-    assert item1.get_distance(item2) == 1.0
-    assert item2.get_distance(item1) == 1.0
-
-@pytest.mark.django_db
 def test_item_created_in_own_cluster():
     item = Item(iri='http://dbpedia.org/resource/Kevin_Bacon')
     item.save()
     assert item.cluster is not None
     assert item.cluster.item_set.count() == 1
-
