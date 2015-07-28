@@ -28,15 +28,17 @@ if not settings.configured:
         INSTALLED_APPS=(
             'rdflib_django',
             'topica',
-        )
+        ),
     )
 
 
 # Views and Routes
 from django.conf.urls import url
+from django.views.generic import ListView
+from . import models
 
 urlpatterns = (
-    url(r'^$', TemplateView.as_view(template_name='home.html')),
+    url(r'^$', ListView.as_view(template_name='home.html', model=models.Cluster, context_object_name='clusters')),
 )
 
 

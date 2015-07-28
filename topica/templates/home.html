@@ -16,9 +16,10 @@
 <body>
 <h1 class="ui header">Topica</h1>
 
-<div class="ui stackable two column grid">
-    <div class="column">One</div>
-    <div class="column">Two</div>
+<div class="ui two doubling cards">
+    {% for cluster in clusters %}
+    <div class="card">{{ cluster }}</div>
+    {% endfor %}
 </div>
 
 </body>

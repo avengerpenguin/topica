@@ -34,4 +34,4 @@ def ingest(iri):
     graph = utils.get_named_graph(iri)
     graph.bind('topica', 'http://example.com/topica/')
     graph += enrich(translate(fetch(iri)))
-    Item.get_or_create(iri)
+    return Item.get_or_create(iri)
