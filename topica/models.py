@@ -1,6 +1,18 @@
+# -*- coding: utf-8 -*-
 from django.db import models
+import itertools
 from rdflib import URIRef
 from rdflib_django import utils
+
+
+def distance(a, b):
+    a_tags = a.get_tags()
+    b_tags = b.get_tags()
+
+    union = a_tags.union(b_tags)
+    intersection = a_tags.intersection(b_tags)
+
+    return float(len(union) - len(intersection)) / float(len(union))
 
 
 class Tag(dict):
@@ -43,14 +55,7 @@ class Item(models.Model):
             """, initBindings={'entity': URIRef(self.iri)})}
 
     def get_distance(self, item):
-        my_tags = self.get_tags()
-        their_tags = item.get_tags()
-
-        union = my_tags.union(their_tags)
-        intersection = my_tags.intersection(their_tags)
-
-        return float(len(union) - len(intersection)) / float(len(union))
-
+        return distance(self, item)
 
     def save(self, *args, **kwargs):
         try:
@@ -66,8 +71,14 @@ class Item(models.Model):
 
 
 class Cluster(models.Model):
-    def linkage(self, cluster):
-        return max({a.get_distance(b) for a in self.item_set.all() for b in cluster.item_set.all()})
+    def linkage(self, other_cluster):
+        return max({distance(a, b) for a in self for b in other_cluster})
+
+    def cohesion(self):
+        n = len(self)
+        return 1.0 - ((1.0 / (n**2 - n)) * sum([distance(a, b)
+                                               for a, b in itertools.product(self, repeat=2)
+                                               if not a == b]))
 
     @classmethod
     def agglomerate(cls):
@@ -87,3 +98,9 @@ class Cluster(models.Model):
 
     def __str__(self):
         return 'cluster-' + str(self.pk)
+
+    def __iter__(self):
+        return self.item_set.all().iterator()
+
+    def __len__(self):
+        return self.item_set.count()
