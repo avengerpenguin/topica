@@ -83,8 +83,8 @@ class Cluster(models.Model):
     @classmethod
     def agglomerate(cls):
         two_nearest = sorted([(a, b)
-                              for a in Cluster.objects.all()
-                              for b in Cluster.objects.all()
+                              for a in cls.objects.all()
+                              for b in cls.objects.all()
                               if not a == b],
                              lambda pair1, pair2: pair1[0].linkage(pair1[1]) <= pair2[0].linkage(pair2[1])
                              )[0]
@@ -96,8 +96,30 @@ class Cluster(models.Model):
         assert two_nearest[1].item_set.count() == 0
         two_nearest[1].delete()
 
+    @classmethod
+    def divide(cls):
+        """
+        Chooses a cluster that seems to be the most spread out or least
+        cohesive then explodes it by putting every item into its own cluster.
+        This then relies on the agglomerate() method then re-merging items that
+        belong together back into cohesive clusters later on.
+        """
+        # Which cluster looks the most spread out?
+        least_cohesive = sorted([c for c in cls.objects.all()],
+                                key=lambda c: c.cohesion())[0]
+
+        # Explode the cluster such that each item is now in a singleton cluster
+        for item in list(least_cohesive):
+            new_cluster = cls()
+            new_cluster.save()
+            item.cluster = new_cluster
+            item.save()
+
+        # Delete the original cluster as it should be empty now
+        least_cohesive.delete()
+
     def __str__(self):
-        return 'cluster-' + str(self.pk)
+        return 'cluster-' + str(self.pk) + ': ' + str(set(self))
 
     def __iter__(self):
         return self.item_set.all().iterator()

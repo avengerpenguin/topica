@@ -180,4 +180,73 @@ def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps():
     Item(iri='http://dbpedia.org/resource/England',
          cluster=cluster).save()
 
+    # Hard-coded to test for the particular method in use, but theoretically
+    # the test should probably just check that it's strictly between 0 and 1.
     assert round(cluster.cohesion(), 2) == 0.33
+
+@pytest.mark.django_db
+def test_cluster_division_separates_cluster_with_unrelated_items():
+    graph = ConjunctiveGraph()
+    graph.parse(format='trig', data="""
+    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+    @prefix topica: <http://example.com/topica/> .
+    @prefix dbpedia: <http://dbpedia.org/resource/> .
+
+    dbpedia:Scotland {
+        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+    }
+
+    dbpedia:Alba {
+        dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+    }
+
+    dbpedia:England {
+        dbpedia:England topica:tag dbpedia:William_Shakespeare, dbpedia:United_Kingdom .
+
+        dbpedia:William_Shakespeare rdfs:label "William Shakespeare" .
+        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+    }
+
+    dbpedia:Goat {
+        dbpedia:Goat topica:tag dbpedia:Horns, dbpedia:Milk .
+
+        dbpedia:Horns rdfs:label "Horns" .
+        dbpedia:Milk rdfs:label "Milk" .
+    }
+
+    """)
+    from rdflib_django import utils
+
+    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
+                                        format='nquads')
+
+    cluster_scotland = Cluster()
+    cluster_scotland.save()
+    cluster_england_and_goat = Cluster()
+    cluster_england_and_goat.save()
+
+    Item(iri='http://dbpedia.org/resource/Scotland', cluster=cluster_scotland).save()
+    Item(iri='http://dbpedia.org/resource/Alba', cluster=cluster_scotland).save()
+
+    england = Item(iri='http://dbpedia.org/resource/England', cluster=cluster_england_and_goat)
+    england.save()
+    goat = Item(iri='http://dbpedia.org/resource/Goat', cluster=cluster_england_and_goat)
+    goat.save()
+
+    Cluster.divide()
+    # Django won't notice the clusters changing unless we re-read fields
+    england.refresh_from_db()
+    goat.refresh_from_db()
+
+    # We expect one cluster to divide, so our original 2 are now 3
+    assert Cluster.objects.count() == 3
+    # Scotland cluster untouched as it has two identical items
+    assert len(cluster_scotland) == 2
+    # England and Goat should be in their own clusters as they are unrelated
+    assert england.cluster != goat.cluster
