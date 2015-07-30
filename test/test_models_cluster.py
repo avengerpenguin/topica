@@ -5,6 +5,61 @@ from topica.models import Item, Tag, Cluster
 TOPICA = Namespace('http://example.com/topica/')
 
 
+def ingest_graph(graph):
+    from rdflib_django import utils
+    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
+                                        format='nquads')
+
+@pytest.fixture
+def scotland_graph():
+    graph = ConjunctiveGraph()
+    graph.parse(format='trig', data="""
+    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+    @prefix topica: <http://example.com/topica/> .
+    @prefix dbpedia: <http://dbpedia.org/resource/> .
+
+    dbpedia:Scotland {
+        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+    }""")
+    return graph
+
+
+@pytest.fixture
+def scotland(scotland_graph):
+    ingest_graph(scotland_graph)
+    item = Item(iri='http://dbpedia.org/resource/Scotland')
+    item.save()
+    return item
+
+
+@pytest.fixture
+def alba_graph():
+    graph = ConjunctiveGraph()
+    graph.parse(format='trig', data="""
+    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+    @prefix topica: <http://example.com/topica/> .
+    @prefix dbpedia: <http://dbpedia.org/resource/> .
+
+    dbpedia:Alba {
+        dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+    }""")
+    return graph
+
+
+@pytest.fixture
+def alba(alba_graph):
+    ingest_graph(alba_graph)
+    item = Item(iri='http://dbpedia.org/resource/Alba')
+    item.save()
+    return item
+
+
 @pytest.mark.django_db
 def test_linkages_between_clusters():
     graph = ConjunctiveGraph()
@@ -71,40 +126,12 @@ def test_linkages_between_clusters():
 
 
 @pytest.mark.django_db
-def test_cluster_cohesion_is_one_when_items_are_identical():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:Alba {
-        dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    """)
-    from rdflib_django import utils
-
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-
+def test_cluster_cohesion_is_one_when_items_are_identical(scotland, alba):
     cluster = Cluster()
     cluster.save()
 
-    Item(iri='http://dbpedia.org/resource/Scotland',
-         cluster=cluster).save()
-    Item(iri='http://dbpedia.org/resource/Alba',
-         cluster=cluster).save()
+    scotland.cluster = cluster
+    alba.cluster = cluster
 
     assert cluster.cohesion() == 1.0
 

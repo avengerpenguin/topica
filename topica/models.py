@@ -76,6 +76,8 @@ class Cluster(models.Model):
 
     def cohesion(self):
         n = len(self)
+        if n == 0:
+            return 1.0
         return 1.0 - ((1.0 / (n**2 - n)) * sum([distance(a, b)
                                                for a, b in itertools.product(self, repeat=2)
                                                if not a == b]))
