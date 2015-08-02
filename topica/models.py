@@ -3,6 +3,7 @@ from django.db import models
 import itertools
 from rdflib import URIRef
 from rdflib_django import utils
+from collections import Counter
 
 
 def distance(a, b):
@@ -119,6 +120,16 @@ class Cluster(models.Model):
 
         # Delete the original cluster as it should be empty now
         least_cohesive.delete()
+
+    def top_tags(self):
+        return sorted(Counter(sum([item.get_tags() for item in self], [])))
+
+
+    @classmethod
+    def clear_empty(cls):
+        for cluster in cls.objects.all().iterator():
+            if len(cluster) == 0:
+                cluster.delete()
 
     def __str__(self):
         return 'cluster-' + str(self.pk) + ': ' + str(set(self))
