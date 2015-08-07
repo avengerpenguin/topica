@@ -110,7 +110,6 @@ class Cluster(models.Model):
         # Which cluster looks the most spread out?
         least_cohesive = sorted([c for c in cls.objects.all()],
                                 key=lambda c: c.cohesion())[0]
-        print least_cohesive
 
         # Explode the cluster such that each item is now in a singleton cluster
         for item in list(least_cohesive):
