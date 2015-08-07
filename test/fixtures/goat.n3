@@ -1,0 +1,24 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix topica: <http://example.com/topica/> .
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+
+dbpedia:Scotland {
+    dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+    dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+    dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+}
+
+dbpedia:England {
+    dbpedia:England topica:tag dbpedia:William_Shakespeare, dbpedia:United_Kingdom .
+
+    dbpedia:William_Shakespeare rdfs:label "William Shakespeare" .
+    dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+}
+
+dbpedia:Goat {
+    dbpedia:Goat topica:tag dbpedia:Horns, dbpedia:Milk .
+
+    dbpedia:Horns rdfs:label "Horns" .
+    dbpedia:Milk rdfs:label "Milk" .
+}

@@ -1,0 +1,10 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix topica: <http://example.com/topica/> .
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+
+dbpedia:Alba {
+    dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+
+    dbpedia:Robert_Burns rdfs:label "Robert Burns" .
+    dbpedia:United_Kingdom rdfs:label "United Kingdom" .
+}

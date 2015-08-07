@@ -18,7 +18,10 @@
 
 <div class="ui two doubling cards">
     {% for cluster in clusters %}
-    <div class="card">{{ cluster }}</div>
+    <div class="card">
+        <h2>Cluster</h2>
+        {{ cluster }}
+    </div>
     {% endfor %}
 </div>
 

@@ -77,7 +77,7 @@ class Cluster(models.Model):
 
     def cohesion(self):
         n = len(self)
-        if n == 0:
+        if n <= 1:
             return 1.0
         return 1.0 - ((1.0 / (n**2 - n)) * sum([distance(a, b)
                                                for a, b in itertools.product(self, repeat=2)
@@ -110,6 +110,7 @@ class Cluster(models.Model):
         # Which cluster looks the most spread out?
         least_cohesive = sorted([c for c in cls.objects.all()],
                                 key=lambda c: c.cohesion())[0]
+        print least_cohesive
 
         # Explode the cluster such that each item is now in a singleton cluster
         for item in list(least_cohesive):
@@ -139,3 +140,6 @@ class Cluster(models.Model):
 
     def __len__(self):
         return self.item_set.count()
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.pk == other.pk

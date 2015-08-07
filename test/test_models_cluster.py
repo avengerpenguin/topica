@@ -10,119 +10,65 @@ def ingest_graph(graph):
     utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
                                         format='nquads')
 
-@pytest.fixture
-def scotland_graph():
+def item_from_graph(graph_path, ident):
     graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }""")
-    return graph
-
-
-@pytest.fixture
-def scotland(scotland_graph):
-    ingest_graph(scotland_graph)
-    item = Item(iri='http://dbpedia.org/resource/Scotland')
+    with open(graph_path) as graph_file:
+        graph.parse(format='trig', data=graph_file.read())
+    from rdflib_django import utils
+    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
+                                        format='nquads')
+    item = Item(iri='http://dbpedia.org/resource/' + ident)
     item.save()
     return item
 
 
 @pytest.fixture
-def alba_graph():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Alba {
-        dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }""")
-    return graph
+def scotland():
+    return item_from_graph('test/fixtures/scotland.n3', 'Scotland')
 
 
 @pytest.fixture
-def alba(alba_graph):
-    ingest_graph(alba_graph)
-    item = Item(iri='http://dbpedia.org/resource/Alba')
-    item.save()
-    return item
+def alba():
+    return item_from_graph('test/fixtures/alba.n3', 'Alba')
+
+
+@pytest.fixture
+def england():
+    return item_from_graph('test/fixtures/england.n3', 'England')
+
+
+@pytest.fixture
+def goat():
+    return item_from_graph('test/fixtures/goat.n3', 'Goat')
 
 
 @pytest.mark.django_db
-def test_linkages_between_clusters():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
+def test_linkages_between_clusters(scotland, england, goat):
 
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
+    for item in [scotland, england, goat]:
+        assert item.cluster.linkage(item.cluster) == 0.0
 
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
+    assert scotland.cluster.linkage(england.cluster) < scotland.cluster.linkage(goat.cluster)
 
-    dbpedia:England {
-        dbpedia:England topica:tag dbpedia:William_Shakespeare, dbpedia:United_Kingdom .
 
-        dbpedia:William_Shakespeare rdfs:label "William Shakespeare" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
+@pytest.mark.django_db
+def test_agglomerate_merges_two_nearest_clusters(scotland, england, goat):
 
-    dbpedia:Goat {
-        dbpedia:Goat topica:tag dbpedia:Horns, dbpedia:Milk .
+    # Given we have 3 singleton clusters at the start
+    assert Cluster.objects.all().count() == 3
 
-        dbpedia:Horns rdfs:label "Horns" .
-        dbpedia:Milk rdfs:label "Milk" .
-    }
-    """)
-    from rdflib_django import utils
-
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-
-    cluster_scotland = Cluster()
-    cluster_scotland.save()
-    cluster_england = Cluster()
-    cluster_england.save()
-    cluster_goat = Cluster()
-    cluster_goat.save()
-
-    Item(iri='http://dbpedia.org/resource/Scotland',
-         cluster=cluster_scotland).save()
-    Item(iri='http://dbpedia.org/resource/England',
-         cluster=cluster_england).save()
-    Item(iri='http://dbpedia.org/resource/Goat', cluster=cluster_goat).save()
-
-    assert cluster_scotland.linkage(cluster_scotland) == 0.0
-    assert cluster_england.linkage(cluster_england) == 0.0
-    assert cluster_goat.linkage(cluster_goat) == 0.0
-    # Scotland is more like England than it is to a goat
-    assert cluster_scotland.linkage(cluster_england) < cluster_scotland.linkage(
-        cluster_goat)
-
-    # cheeky second test to prove the agglomeration because I'm too lazy to
-    # break out all the setup above into a fixture just yet
     Cluster.agglomerate()
+    # Django will have cached these, so refresh to see latest memberships
+    scotland.refresh_from_db()
+    england.refresh_from_db()
+    goat.refresh_from_db()
 
+    # we should have lost a cluster
     assert Cluster.objects.all().count() == 2
-    assert cluster_goat.item_set.count() == 1
-    assert Item.get_or_create(
-        iri='http://dbpedia.org/resource/Scotland').cluster == Item.get_or_create(
-        iri='http://dbpedia.org/resource/England').cluster
+    # Check the goat is still in its own singleton cluster
+    assert goat.cluster.item_set.count() == 1
+    # England and Scotland should have been merged
+    assert scotland.cluster == england.cluster
 
 
 @pytest.mark.django_db
@@ -136,138 +82,56 @@ def test_cluster_cohesion_is_one_when_items_are_identical(scotland, alba):
     assert cluster.cohesion() == 1.0
 
 @pytest.mark.django_db
-def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:Goat {
-        dbpedia:Goat topica:tag dbpedia:Horns, dbpedia:Milk .
-
-        dbpedia:Horns rdfs:label "Horns" .
-        dbpedia:Milk rdfs:label "Milk" .
-    }
-
-    """)
-    from rdflib_django import utils
-
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-
+def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat):
     cluster = Cluster()
     cluster.save()
 
-    Item(iri='http://dbpedia.org/resource/Scotland', cluster=cluster).save()
-    Item(iri='http://dbpedia.org/resource/Goat', cluster=cluster).save()
+    scotland.cluster = cluster
+    scotland.save()
+    goat.cluster = cluster
+    goat.save()
 
     assert cluster.cohesion() == 0.0
 
+
 @pytest.mark.django_db
-def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:England {
-        dbpedia:England topica:tag dbpedia:William_Shakespeare, dbpedia:United_Kingdom .
-
-        dbpedia:William_Shakespeare rdfs:label "William Shakespeare" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    """)
-    from rdflib_django import utils
-
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-
+def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps(scotland, england):
     cluster = Cluster()
     cluster.save()
 
-    Item(iri='http://dbpedia.org/resource/Scotland',
-         cluster=cluster).save()
-    Item(iri='http://dbpedia.org/resource/England',
-         cluster=cluster).save()
+    scotland.cluster = cluster
+    scotland.save()
+    england.cluster = cluster
+    england.save()
 
     # Hard-coded to test for the particular method in use, but theoretically
     # the test should probably just check that it's strictly between 0 and 1.
     assert round(cluster.cohesion(), 2) == 0.33
 
+
 @pytest.mark.django_db
-def test_cluster_division_separates_cluster_with_unrelated_items():
-    graph = ConjunctiveGraph()
-    graph.parse(format='trig', data="""
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-    @prefix topica: <http://example.com/topica/> .
-    @prefix dbpedia: <http://dbpedia.org/resource/> .
-
-    dbpedia:Scotland {
-        dbpedia:Scotland topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:Alba {
-        dbpedia:Alba topica:tag dbpedia:Robert_Burns, dbpedia:United_Kingdom .
-
-        dbpedia:Robert_Burns rdfs:label "Robert Burns" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:England {
-        dbpedia:England topica:tag dbpedia:William_Shakespeare, dbpedia:United_Kingdom .
-
-        dbpedia:William_Shakespeare rdfs:label "William Shakespeare" .
-        dbpedia:United_Kingdom rdfs:label "United Kingdom" .
-    }
-
-    dbpedia:Goat {
-        dbpedia:Goat topica:tag dbpedia:Horns, dbpedia:Milk .
-
-        dbpedia:Horns rdfs:label "Horns" .
-        dbpedia:Milk rdfs:label "Milk" .
-    }
-
-    """)
-    from rdflib_django import utils
-
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-
+def test_cluster_division_separates_cluster_with_unrelated_items(scotland, alba, england, goat):
     cluster_scotland = Cluster()
     cluster_scotland.save()
     cluster_england_and_goat = Cluster()
     cluster_england_and_goat.save()
 
-    Item(iri='http://dbpedia.org/resource/Scotland', cluster=cluster_scotland).save()
-    Item(iri='http://dbpedia.org/resource/Alba', cluster=cluster_scotland).save()
-
-    england = Item(iri='http://dbpedia.org/resource/England', cluster=cluster_england_and_goat)
+    scotland.cluster = cluster_scotland
+    scotland.save()
+    alba.cluster = cluster_scotland
+    alba.save()
+    england.cluster = cluster_england_and_goat
     england.save()
-    goat = Item(iri='http://dbpedia.org/resource/Goat', cluster=cluster_england_and_goat)
+    goat.cluster = cluster_england_and_goat
     goat.save()
+
+    Cluster.clear_empty()
+
+    assert Cluster.objects.count() == 2
 
     Cluster.divide()
     # Django won't notice the clusters changing unless we re-read fields
+    scotland.refresh_from_db()
     england.refresh_from_db()
     goat.refresh_from_db()
 
