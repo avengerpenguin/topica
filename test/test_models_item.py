@@ -9,21 +9,6 @@ from topica.models import Item, Tag
 TOPICA = Namespace('http://example.com/topica/')
 
 
-@pytest.fixture(autouse=True, scope='module')
-def mock_responses(request):
-    def callback(_http_request, uri, headers):
-        httpretty.disable()
-        response = testypie.get_response(uri, headers)
-        httpretty.enable()
-        return response['code'], response['headers'], response['body']
-
-    httpretty.enable()
-    httpretty.register_uri(httpretty.GET, re.compile('.*'), body=callback)
-
-    request.addfinalizer(httpretty.disable)
-    request.addfinalizer(httpretty.reset)
-
-
 @pytest.mark.django_db
 def test_basic_item_creation():
     item = Item(iri='http://dbpedia.org/resource/Kevin_Bacon')

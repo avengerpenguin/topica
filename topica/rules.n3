@@ -18,3 +18,10 @@
 { ?x og:title              ?y } => { ?x topica:title       ?y } .
 { ?x schema:name           ?y } => { ?x topica:title       ?y } .
 { ?x rdfs:label            ?y } => { ?x topica:title       ?y } .
+{ ?x schema:name           ?y } => { ?x rdfs:label         ?y } .
+
+{   ?page foaf:primaryTopic ?programme .
+    ?programme po:masterbrand ?mb .       } => { ?page topica:tag ?mb } .
+
+{ ?page foaf:primaryTopic ?programme .
+  ?programme po:genre ?genre . } => { ?page topica:tag ?genre } .
