@@ -1,11 +1,11 @@
 import os
-from rdflib import Graph, Namespace, URIRef, plugin
-from rdflib.store import Store
+from rdflib import Graph, Namespace, URIRef
 from FuXi.Rete.RuleStore import SetupRuleStore
 from FuXi.Rete.Util import generateTokenSet
 from FuXi.Horn.HornRules import HornFromN3
 from .models import Item
 import re
+from rdflib_django import utils
 
 
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
@@ -56,7 +56,7 @@ def enrich(graph):
 
 
 def ingest(iri):
-    graph = Graph('Sleepycat', identifier=iri)
+    graph = utils.get_named_graph(iri)
     graph.bind('topica', 'http://example.com/topica/')
     graph += enrich(translate(fetch(iri)))
 

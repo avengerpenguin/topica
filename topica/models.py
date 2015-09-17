@@ -5,6 +5,7 @@ import itertools
 from rdflib import URIRef, Graph, plugin
 from rdflib.store import Store
 from collections import Counter
+from rdflib_django import utils
 
 
 store = plugin.get("SQLAlchemy", Store)(identifier=os.getenv('DATABASE_URL', 'sqlite://'))
@@ -34,7 +35,7 @@ class Item(models.Model):
 
     def __init__(self, *args, **kwargs):
         super(Item, self).__init__(*args, **kwargs)
-        self.graph = Graph('Sleepycat', identifier=self.iri)
+        self.graph = utils.get_named_graph(self.iri)
 
     @classmethod
     def get_or_create(cls, iri):
