@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import os
+from __future__ import print_function
 from django.db import models
 import itertools
-from rdflib import URIRef, Graph, plugin
-from rdflib.store import Store
+from rdflib import URIRef, Namespace, RDFS
 from collections import Counter
 from rdflib_django import utils
 
 
-store = plugin.get("SQLAlchemy", Store)(identifier=os.getenv('DATABASE_URL', 'sqlite://'))
+TOPICA = Namespace('http://example.com/topica/')
 
 
 def distance(a, b):
@@ -16,6 +15,10 @@ def distance(a, b):
     b_tags = b.get_tags()
 
     union = a_tags.union(b_tags)
+
+    if len(union) == 0:
+        return 1.0
+
     intersection = a_tags.intersection(b_tags)
 
     return float(len(union) - len(intersection)) / float(len(union))
@@ -28,6 +31,7 @@ class Tag(dict):
 
     def __hash__(self):
         return hash(self['iri'] + self['name'])
+
 
 class Item(models.Model):
     iri = models.CharField(max_length=255, unique=True)
@@ -48,6 +52,14 @@ class Item(models.Model):
 
         return thing
 
+    @property
+    def title(self):
+        titles = list(self.graph.objects(subject=URIRef(self.iri), predicate=RDFS.label))
+        if titles:
+            return titles[0]
+        else:
+            return 'UNKNOWN_TITLE'
+
     def get_tags(self):
         return {Tag(name=str(row.name), iri=str(row.iri)) for row in self.graph.query(
             """
@@ -67,18 +79,21 @@ class Item(models.Model):
         try:
             self.cluster
         except Cluster.DoesNotExist:
+            print('Item {} has no cluster, so placing in its own singleton cluster.'.format(self.iri))
             cluster = Cluster()
             cluster.save()
             self.cluster = cluster
         super(Item, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.iri
+        return self.title or self.iri
 
 
 class Cluster(models.Model):
+
     def linkage(self, other_cluster):
-        return max({distance(a, b) for a in self for b in other_cluster})
+        result = max({distance(a, b) for a in self for b in other_cluster})
+        return result
 
     def cohesion(self):
         n = len(self)
@@ -94,8 +109,18 @@ class Cluster(models.Model):
                               for a in cls.objects.all()
                               for b in cls.objects.all()
                               if not a == b],
-                             lambda pair1, pair2: pair1[0].linkage(pair1[1]) <= pair2[0].linkage(pair2[1])
+                             lambda pair1, pair2: int(10*(pair1[0].linkage(pair1[1]) - pair2[0].linkage(pair2[1])))
                              )[0]
+
+        linkage = two_nearest[0].linkage(two_nearest[1])
+
+        if linkage > 0.4:
+            print('Refusing to merge: {} and {} with linkage {}'.format(
+                two_nearest[0], two_nearest[1], linkage))
+            return None
+
+        print('Identified two clusters to merge: {} and {} with linkage {}'.format(
+            two_nearest[0], two_nearest[1], linkage))
 
         for item in two_nearest[1].item_set.all():
             item.cluster = two_nearest[0]
@@ -103,6 +128,8 @@ class Cluster(models.Model):
 
         assert two_nearest[1].item_set.count() == 0
         two_nearest[1].delete()
+
+        return two_nearest[0]
 
     @classmethod
     def divide(cls):
@@ -116,6 +143,14 @@ class Cluster(models.Model):
         least_cohesive = sorted([c for c in cls.objects.all()],
                                 key=lambda c: c.cohesion())[0]
 
+        cohesion = least_cohesive.cohesion()
+
+        if cohesion > 0.7:
+            print('Refusing to split cluster {} with cohestion {}'.format(least_cohesive, cohesion))
+            return least_cohesive
+
+        print('Idenfitied cluster to split {} with cohestion {}'.format(least_cohesive, cohesion))
+
         # Explode the cluster such that each item is now in a singleton cluster
         for item in list(least_cohesive):
             new_cluster = cls()
@@ -127,13 +162,13 @@ class Cluster(models.Model):
         least_cohesive.delete()
 
     def top_tags(self):
-        return sorted(Counter(sum([item.get_tags() for item in self], [])))
-
+        return Counter(sum([list(item.get_tags()) for item in self], [])).most_common(10)
 
     @classmethod
     def clear_empty(cls):
         for cluster in cls.objects.all().iterator():
             if len(cluster) == 0:
+                print('Deleting empty cluster: {}'.format(cluster))
                 cluster.delete()
 
     def __str__(self):
