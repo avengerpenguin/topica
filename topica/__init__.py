@@ -56,9 +56,9 @@ def ingest(request):
 
             response = 'OK\n'
 
-            uris = [line.strip() # trim any whitespace
-                for line in request.body.decode('utf-8').splitlines()
-                if not line.startswith('#')]
+            uris = [line.strip()  # trim any whitespace
+                    for line in request.body.decode('utf-8').splitlines()
+                    if not line.startswith('#')]
 
             for uri in uris:
                 tasks.ingest.delay(uri)
@@ -73,7 +73,8 @@ def ingest(request):
 
 urlpatterns = (
     url(r'ingest/?$', ingest),
-    url(r'^$', ListView.as_view(template_name='home.html', model=models.Cluster, context_object_name='clusters')),
+    url(r'^$', ListView.as_view(template_name='home.html',
+                                model=models.Cluster, context_object_name='clusters')),
 )
 
 

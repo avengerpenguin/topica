@@ -36,13 +36,14 @@ def translate(graph):
         network.buildNetworkFromClause(rule)
 
     network.feedFactsToAdd(generateTokenSet(graph))
-    print('Inferred {} facts for {}'.format(len(closure_delta), graph.identifier))
+    print('Inferred {} facts for {}'.format(
+        len(closure_delta), graph.identifier))
     return graph + closure_delta
 
 
 def enrich(graph):
     tag_iris = [row.iri for row in graph.query(
-            """
+        """
             PREFIX topica: <http://example.com/topica/>
 
             SELECT DISTINCT ?iri ?name
@@ -56,7 +57,8 @@ def enrich(graph):
         m = re.match('^(http://www.bbc.co.uk/programmes/.+?)#[a-z]+$', iri)
         if m:
             uri = m.group(1)
-            print('Adding data for {} to graph for {}'.format(uri + '.rdf', graph.identifier))
+            print('Adding data for {} to graph for {}'.format(
+                uri + '.rdf', graph.identifier))
             graph.parse(uri + '.rdf')
             graph.add((URIRef(uri), FOAF.primaryTopic, URIRef(iri)))
     return graph

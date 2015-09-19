@@ -25,6 +25,7 @@ def distance(a, b):
 
 
 class Tag(dict):
+
     def __init__(self, iri, name):
         self['iri'] = iri
         self['name'] = name
@@ -54,7 +55,8 @@ class Item(models.Model):
 
     @property
     def title(self):
-        titles = list(self.graph.objects(subject=URIRef(self.iri), predicate=RDFS.label))
+        titles = list(self.graph.objects(
+            subject=URIRef(self.iri), predicate=RDFS.label))
         if titles:
             return titles[0]
         else:
@@ -79,7 +81,8 @@ class Item(models.Model):
         try:
             self.cluster
         except Cluster.DoesNotExist:
-            print('Item {} has no cluster, so placing in its own singleton cluster.'.format(self.iri))
+            print('Item {} has no cluster, so placing in its own singleton cluster.'.format(
+                self.iri))
             cluster = Cluster()
             cluster.save()
             self.cluster = cluster
@@ -101,8 +104,8 @@ class Cluster(models.Model):
         if n <= 1:
             return 1.0
         return 1.0 - ((1.0 / (n**2 - n)) * sum([distance(a, b)
-                                               for a, b in itertools.product(self, repeat=2)
-                                               if not a == b]))
+                                                for a, b in itertools.product(self, repeat=2)
+                                                if not a == b]))
 
     @classmethod
     def agglomerate(cls):
@@ -110,7 +113,8 @@ class Cluster(models.Model):
                               for a in cls.objects.all()
                               for b in cls.objects.all()
                               if not a == b],
-                             lambda pair1, pair2: int(10*(pair1[0].linkage(pair1[1]) - pair2[0].linkage(pair2[1])))
+                             lambda pair1, pair2: int(
+                                 10 * (pair1[0].linkage(pair1[1]) - pair2[0].linkage(pair2[1])))
                              )[0]
 
         linkage = two_nearest[0].linkage(two_nearest[1])
@@ -134,11 +138,12 @@ class Cluster(models.Model):
 
     @classmethod
     def divide(cls):
-        """
-        Chooses a cluster that seems to be the most spread out or least
+        """Chooses a cluster that seems to be the most spread out or least
         cohesive then explodes it by putting every item into its own cluster.
+
         This then relies on the agglomerate() method then re-merging items that
         belong together back into cohesive clusters later on.
+
         """
         # Which cluster looks the most spread out?
         least_cohesive = sorted([c for c in cls.objects.all()],
@@ -150,7 +155,8 @@ class Cluster(models.Model):
         #     print('Refusing to split cluster {} with cohestion {}'.format(least_cohesive, cohesion))
         #     return least_cohesive
 
-        print('Idenfitied cluster to split {} with cohestion {}'.format(least_cohesive, cohesion))
+        print('Idenfitied cluster to split {} with cohestion {}'.format(
+            least_cohesive, cohesion))
 
         # Explode the cluster such that each item is now in a singleton cluster
         for item in list(least_cohesive):
