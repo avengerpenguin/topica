@@ -1,0 +1,10 @@
+pyformat
+django
+testypie
+pytest
+pyformat
+httpretty
+django12factor
+laconia
+rdflib
+-e git+ssh://git@github.com/avengerpenguin/FuXi#egg=FuXi
