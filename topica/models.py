@@ -68,7 +68,7 @@ class Item(models.Model):
             SELECT DISTINCT ?iri ?name
             WHERE {
                 ?entity topica:tag ?iri .
-                ?iri rdfs:label ?name .
+                ?iri    rdfs:label ?name .
             }
             """, initBindings={'entity': URIRef(self.iri)})}
 
@@ -95,6 +95,7 @@ class Cluster(models.Model):
         result = max({distance(a, b) for a in self for b in other_cluster})
         return result
 
+    @property
     def cohesion(self):
         n = len(self)
         if n <= 1:
@@ -114,10 +115,10 @@ class Cluster(models.Model):
 
         linkage = two_nearest[0].linkage(two_nearest[1])
 
-        if linkage > 0.4:
-            print('Refusing to merge: {} and {} with linkage {}'.format(
-                two_nearest[0], two_nearest[1], linkage))
-            return None
+        # if linkage > 0.4:
+        #     print('Refusing to merge: {} and {} with linkage {}'.format(
+        #         two_nearest[0], two_nearest[1], linkage))
+        #     return None
 
         print('Identified two clusters to merge: {} and {} with linkage {}'.format(
             two_nearest[0], two_nearest[1], linkage))
@@ -141,13 +142,13 @@ class Cluster(models.Model):
         """
         # Which cluster looks the most spread out?
         least_cohesive = sorted([c for c in cls.objects.all()],
-                                key=lambda c: c.cohesion())[0]
+                                key=lambda c: c.cohesion)[0]
 
-        cohesion = least_cohesive.cohesion()
+        cohesion = least_cohesive.cohesion
 
-        if cohesion > 0.7:
-            print('Refusing to split cluster {} with cohestion {}'.format(least_cohesive, cohesion))
-            return least_cohesive
+        # if cohesion > 0.7:
+        #     print('Refusing to split cluster {} with cohestion {}'.format(least_cohesive, cohesion))
+        #     return least_cohesive
 
         print('Idenfitied cluster to split {} with cohestion {}'.format(least_cohesive, cohesion))
 

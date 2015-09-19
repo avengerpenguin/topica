@@ -6,6 +6,7 @@ import django12factor
 from django.http import HttpResponse
 from celery import Celery
 
+
 # Configuration
 BASE_DIR = os.path.dirname(__file__)
 d12f = django12factor.factorise()

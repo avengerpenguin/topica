@@ -79,7 +79,7 @@ def test_cluster_cohesion_is_one_when_items_are_identical(scotland, alba):
     scotland.cluster = cluster
     alba.cluster = cluster
 
-    assert cluster.cohesion() == 1.0
+    assert cluster.cohesion == 1.0
 
 @pytest.mark.django_db
 def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat):
@@ -91,7 +91,7 @@ def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat)
     goat.cluster = cluster
     goat.save()
 
-    assert cluster.cohesion() == 0.0
+    assert cluster.cohesion == 0.0
 
 
 @pytest.mark.django_db
@@ -106,7 +106,7 @@ def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps(scotland, 
 
     # Hard-coded to test for the particular method in use, but theoretically
     # the test should probably just check that it's strictly between 0 and 1.
-    assert round(cluster.cohesion(), 2) == 0.33
+    assert round(cluster.cohesion, 2) == 0.33
 
 
 @pytest.mark.django_db
