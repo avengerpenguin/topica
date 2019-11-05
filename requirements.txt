@@ -24,7 +24,7 @@ pyformat==0.7
 pyparsing==2.4.3          # via rdflib
 pytest==5.2.2
 rdflib==4.2.2
-six==1.12.0                # via django12factor, html5lib
+six==1.13.0                # via django12factor, html5lib
 sparqlwrapper==1.8.4      # via rdflib
 testypie==1.0.0
 unify==0.5                # via pyformat
