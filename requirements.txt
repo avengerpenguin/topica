@@ -6,7 +6,7 @@
 #
 -e git+ssh://git@github.com/avengerpenguin/FuXi#egg=FuXi
 autoflake==1.4          # via pyformat
-autopep8==1.5.4             # via pyformat
+autopep8==1.5.5             # via pyformat
 dj-database-url==0.5.0    # via django12factor
 dj-email-url==1.0.2       # via django12factor
 django-cache-url==3.2.2   # via django12factor
