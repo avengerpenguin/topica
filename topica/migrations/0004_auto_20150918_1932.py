@@ -29,7 +29,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "to_cluster",
-                    models.ForeignKey(related_name="to_clusters", to="topica.Cluster"),
+                    models.ForeignKey(
+                        related_name="to_clusters", to="topica.Cluster"
+                    ),
                 ),
             ],
         ),
