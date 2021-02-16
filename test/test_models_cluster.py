@@ -1,45 +1,51 @@
 import pytest
-from rdflib import Namespace, ConjunctiveGraph
-from topica.models import Item, Tag, Cluster
+from rdflib import ConjunctiveGraph, Namespace
 
-TOPICA = Namespace('http://example.com/topica/')
+from topica.models import Cluster, Item
+
+TOPICA = Namespace("http://example.com/topica/")
 
 
 def ingest_graph(graph):
     from rdflib_django import utils
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
+
+    utils.get_conjunctive_graph().parse(
+        data=graph.serialize(format="nquads"), format="nquads"
+    )
+
 
 def item_from_graph(graph_path, ident):
     graph = ConjunctiveGraph()
     with open(graph_path) as graph_file:
-        graph.parse(format='trig', data=graph_file.read())
+        graph.parse(format="trig", data=graph_file.read())
     from rdflib_django import utils
-    utils.get_conjunctive_graph().parse(data=graph.serialize(format='nquads'),
-                                        format='nquads')
-    item = Item(iri='http://dbpedia.org/resource/' + ident)
+
+    utils.get_conjunctive_graph().parse(
+        data=graph.serialize(format="nquads"), format="nquads"
+    )
+    item = Item(iri="http://dbpedia.org/resource/" + ident)
     item.save()
     return item
 
 
 @pytest.fixture
 def scotland():
-    return item_from_graph('test/fixtures/scotland.n3', 'Scotland')
+    return item_from_graph("test/fixtures/scotland.n3", "Scotland")
 
 
 @pytest.fixture
 def alba():
-    return item_from_graph('test/fixtures/alba.n3', 'Alba')
+    return item_from_graph("test/fixtures/alba.n3", "Alba")
 
 
 @pytest.fixture
 def england():
-    return item_from_graph('test/fixtures/england.n3', 'England')
+    return item_from_graph("test/fixtures/england.n3", "England")
 
 
 @pytest.fixture
 def goat():
-    return item_from_graph('test/fixtures/goat.n3', 'Goat')
+    return item_from_graph("test/fixtures/goat.n3", "Goat")
 
 
 @pytest.mark.django_db
@@ -48,7 +54,9 @@ def test_linkages_between_clusters(scotland, england, goat):
     for item in [scotland, england, goat]:
         assert item.cluster.linkage(item.cluster) == 0.0
 
-    assert scotland.cluster.linkage(england.cluster) < scotland.cluster.linkage(goat.cluster)
+    assert scotland.cluster.linkage(england.cluster) < scotland.cluster.linkage(
+        goat.cluster
+    )
 
 
 @pytest.mark.django_db
@@ -81,6 +89,7 @@ def test_cluster_cohesion_is_one_when_items_are_identical(scotland, alba):
 
     assert cluster.cohesion == 1.0
 
+
 @pytest.mark.django_db
 def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat):
     cluster = Cluster()
@@ -95,7 +104,9 @@ def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat)
 
 
 @pytest.mark.django_db
-def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps(scotland, england):
+def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps(
+    scotland, england
+):
     cluster = Cluster()
     cluster.save()
 
@@ -110,7 +121,9 @@ def test_cluster_cohesion_is_between_zero_and_one_when_items_overlaps(scotland, 
 
 
 @pytest.mark.django_db
-def test_cluster_division_separates_cluster_with_unrelated_items(scotland, alba, england, goat):
+def test_cluster_division_separates_cluster_with_unrelated_items(
+    scotland, alba, england, goat
+):
     cluster_scotland = Cluster()
     cluster_scotland.save()
     cluster_england_and_goat = Cluster()
