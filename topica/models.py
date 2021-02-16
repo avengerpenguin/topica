@@ -192,9 +192,9 @@ class Cluster(models.Model):
         least_cohesive.delete()
 
     def top_tags(self):
-        return Counter(sum([list(item.get_tags()) for item in self], [])).most_common(
-            10
-        )
+        return Counter(
+            sum([list(item.get_tags()) for item in self], [])
+        ).most_common(10)
 
     @classmethod
     def clear_empty(cls):

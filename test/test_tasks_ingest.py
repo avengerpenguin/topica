@@ -14,7 +14,10 @@ def mock_responses(request):
         httpretty.disable()
         response = testypie.get_response(uri, http_request.headers)
         headers.update(
-            {key.lower(): value for key, value in response["headers"].iteritems()}
+            {
+                key.lower(): value
+                for key, value in response["headers"].iteritems()
+            }
         )
         print uri
         httpretty.enable()

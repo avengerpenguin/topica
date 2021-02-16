@@ -21,7 +21,11 @@ def test_can_access_graph_via_item():
 
     graph = utils.get_named_graph(iri)
     graph.add(
-        (URIRef("http://dbpedia.org/resource/Kevin_Bacon"), RDF.type, Literal("Person"))
+        (
+            URIRef("http://dbpedia.org/resource/Kevin_Bacon"),
+            RDF.type,
+            Literal("Person"),
+        )
     )
 
     # When

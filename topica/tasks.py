@@ -36,7 +36,9 @@ def translate(graph):
         network.buildNetworkFromClause(rule)
 
     network.feedFactsToAdd(generateTokenSet(graph))
-    print("Inferred {} facts for {}".format(len(closure_delta), graph.identifier))
+    print(
+        "Inferred {} facts for {}".format(len(closure_delta), graph.identifier)
+    )
     return graph + closure_delta
 
 
