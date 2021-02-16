@@ -54,9 +54,9 @@ def test_linkages_between_clusters(scotland, england, goat):
     for item in [scotland, england, goat]:
         assert item.cluster.linkage(item.cluster) == 0.0
 
-    assert scotland.cluster.linkage(england.cluster) < scotland.cluster.linkage(
-        goat.cluster
-    )
+    assert scotland.cluster.linkage(
+        england.cluster
+    ) < scotland.cluster.linkage(goat.cluster)
 
 
 @pytest.mark.django_db
@@ -91,7 +91,9 @@ def test_cluster_cohesion_is_one_when_items_are_identical(scotland, alba):
 
 
 @pytest.mark.django_db
-def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(scotland, goat):
+def test_cluster_cohesion_is_zero_when_items_are_fully_unrelated(
+    scotland, goat
+):
     cluster = Cluster()
     cluster.save()
 

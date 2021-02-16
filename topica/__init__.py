@@ -51,7 +51,10 @@ from . import models
 
 def ingest(request):
     if request.method == "POST":
-        if request.META.get("CONTENT_TYPE", "text/uri-list") == "text/uri-list":
+        if (
+            request.META.get("CONTENT_TYPE", "text/uri-list")
+            == "text/uri-list"
+        ):
 
             response = "OK\n"
 
@@ -65,7 +68,9 @@ def ingest(request):
                 tasks.ingest.delay(uri)
                 response += f"Creating item: {uri}\n"
 
-            return HttpResponse(response, status=201, content_type="text/plain")
+            return HttpResponse(
+                response, status=201, content_type="text/plain"
+            )
         else:
             return HttpResponse(status=415)
     else:
