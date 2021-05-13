@@ -14,7 +14,7 @@ docformatter==1.4       # via pyformat
 #
 -e git+ssh://git@github.com/avengerpenguin/FuXi#egg=FuXi
 html5lib==1.1       # via rdflib
-httpretty==1.0.5
+httpretty==1.1.0
 isodate==0.6.0            # via rdflib
 laconia==0.5.7
 pep8==1.7.1               # via autopep8
