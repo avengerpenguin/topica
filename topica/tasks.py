@@ -21,7 +21,7 @@ def fetch(iri):
     if "http://www.bbc.co.uk/programmes/" in iri:
         graph.parse(iri + ".rdf")
         graph.add((URIRef(iri), FOAF.primaryTopic, URIRef(iri + "#programme")))
-    print("Created graph of length {} for entity {}".format(len(graph), iri))
+    print(f"Created graph of length {len(graph)} for entity {iri}")
     return graph
 
 
@@ -37,7 +37,7 @@ def translate(graph):
 
     network.feedFactsToAdd(generateTokenSet(graph))
     print(
-        "Inferred {} facts for {}".format(len(closure_delta), graph.identifier)
+        f"Inferred {len(closure_delta)} facts for {graph.identifier}"
     )
     return graph + closure_delta
 

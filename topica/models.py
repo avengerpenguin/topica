@@ -111,23 +111,23 @@ class Cluster(models.Model):
         return 1.0 - (
             (1.0 / (n ** 2 - n))
             * sum(
-                [
+                
                     distance(a, b)
                     for a, b in itertools.product(self, repeat=2)
                     if not a == b
-                ]
+                
             )
         )
 
     @classmethod
     def agglomerate(cls):
         two_nearest = sorted(
-            [
+            (
                 (a, b)
                 for a in cls.objects.all()
                 for b in cls.objects.all()
                 if not a == b
-            ],
+            ),
             lambda pair1, pair2: int(
                 10 * (pair1[0].linkage(pair1[1]) - pair2[0].linkage(pair2[1]))
             ),
@@ -166,7 +166,7 @@ class Cluster(models.Model):
         """
         # Which cluster looks the most spread out?
         least_cohesive = sorted(
-            [c for c in cls.objects.all()], key=lambda c: c.cohesion
+            (c for c in cls.objects.all()), key=lambda c: c.cohesion
         )[0]
 
         cohesion = least_cohesive.cohesion
@@ -193,7 +193,7 @@ class Cluster(models.Model):
 
     def top_tags(self):
         return Counter(
-            sum([list(item.get_tags()) for item in self], [])
+            sum((list(item.get_tags()) for item in self), [])
         ).most_common(10)
 
     @classmethod
