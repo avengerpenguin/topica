@@ -109,7 +109,7 @@ class Cluster(models.Model):
         if n <= 1:
             return 1.0
         return 1.0 - (
-            (1.0 / (n ** 2 - n))
+            (1.0 / (n**2 - n))
             * sum(
                 distance(a, b)
                 for a, b in itertools.product(self, repeat=2)
