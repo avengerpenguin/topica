@@ -8,3 +8,13 @@ django12factor
 laconia
 rdflib
 -e git+ssh://git@github.com/avengerpenguin/FuXi#egg=FuXi
+httplib2
+celery
+-e git+ssh://git@github.com/avengerpenguin/rdflib-django#egg=rdflib_django
+flask
+requests
+django_extensions
+psycopg2
+honcho
+ez_setup
+expiringdict

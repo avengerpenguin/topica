@@ -38,6 +38,9 @@ setup(
     author_email = 'github@rossfenning.co.uk',
 
     packages = ['topica'],
+    package_data={
+        '': ['templates/*.html'],
+    },
 
     tests_require=['pytest'],
     cmdclass = {'test': PyTest},

@@ -9,6 +9,7 @@ from .models import Item
 import re
 from rdflib_django import utils
 from celery import shared_task
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 FOAF = Namespace('http://xmlns.com/foaf/0.1/')
@@ -22,6 +23,22 @@ def fetch(iri):
     if 'http://www.bbc.co.uk/programmes/' in iri:
         graph.parse(iri + '.rdf')
         graph.add((URIRef(iri), FOAF.primaryTopic, URIRef(iri + '#programme')))
+
+
+    dbpedia = SPARQLWrapper("http://dbpedia.org/sparql")
+    dbpedia.setQuery("""
+            PREFIX dbo: <http://dbpedia.org/ontology/>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            SELECT ?dbpediaEntity
+            WHERE {{
+                    ?dbpediaEntity dbo:wikiPageExternalLink <{iri}> .
+             }}
+        """.format(iri=iri))
+    dbpedia.setReturnFormat(JSON)
+    results = dbpedia.query().convert()
+    for result in results["results"]["bindings"]:
+        graph.parse(result["dbpediaEntity"]["value"])
+
     print('Created graph of length {} for entity {}'.format(len(graph), iri))
     return graph
 
@@ -41,7 +58,11 @@ def translate(graph):
     return graph + closure_delta
 
 
-def enrich(graph):
+def pre_enrich(graph):
+    return graph
+
+
+def post_enrich(graph):
     tag_iris = [row.iri for row in graph.query(
         """
             PREFIX topica: <http://example.com/topica/>
@@ -68,6 +89,6 @@ def enrich(graph):
 def ingest(iri):
     graph = utils.get_named_graph(iri)
     graph.bind('topica', 'http://example.com/topica/')
-    graph += enrich(translate(fetch(iri)))
+    graph += post_enrich(translate(pre_enrich(fetch(iri))))
 
     return Item.get_or_create(iri)

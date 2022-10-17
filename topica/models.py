@@ -5,12 +5,23 @@ import itertools
 from rdflib import URIRef, Namespace, RDFS
 from collections import Counter
 from rdflib_django import utils
+from expiringdict import ExpiringDict
 
 
 TOPICA = Namespace('http://example.com/topica/')
+distance_cache = ExpiringDict(max_len=1000000, max_age_seconds=300)
+linkage_cache = ExpiringDict(max_len=1000000, max_age_seconds=300)
 
 
 def distance(a, b):
+
+    cache_key = (a.iri, b.iri)
+    if cache_key in distance_cache:
+        print('Cache HIT for distance between {} and {}'.format(a, b))
+        return distance_cache[cache_key]
+    else:
+        print('Cache MISS for distance between {} and {}'.format(a, b))
+
     a_tags = a.get_tags()
     b_tags = b.get_tags()
 
@@ -21,7 +32,9 @@ def distance(a, b):
 
     intersection = a_tags.intersection(b_tags)
 
-    return float(len(union) - len(intersection)) / float(len(union))
+    d = float(len(union) - len(intersection)) / float(len(union))
+    distance_cache[cache_key] = d
+    return d
 
 
 class Tag(dict):
@@ -95,7 +108,15 @@ class Item(models.Model):
 class Cluster(models.Model):
 
     def linkage(self, other_cluster):
+        cache_key = (self.pk, other_cluster.pk)
+        if cache_key in linkage_cache:
+            print('Cache HIT for linkage between {} and {}'.format(self, other_cluster))
+            return linkage_cache[cache_key]
+        else:
+            print('Cache MISS for linkage between {} and {}'.format(self, other_cluster))
+
         result = max({distance(a, b) for a in self for b in other_cluster})
+        linkage_cache[cache_key] = result
         return result
 
     @property
