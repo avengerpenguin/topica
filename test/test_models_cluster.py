@@ -50,7 +50,6 @@ def goat():
 
 @pytest.mark.django_db
 def test_linkages_between_clusters(scotland, england, goat):
-
     for item in [scotland, england, goat]:
         assert item.cluster.linkage(item.cluster) == 0.0
 
@@ -61,7 +60,6 @@ def test_linkages_between_clusters(scotland, england, goat):
 
 @pytest.mark.django_db
 def test_agglomerate_merges_two_nearest_clusters(scotland, england, goat):
-
     # Given we have 3 singleton clusters at the start
     assert Cluster.objects.all().count() == 3
 
