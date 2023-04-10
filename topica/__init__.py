@@ -55,7 +55,6 @@ def ingest(request):
             request.META.get("CONTENT_TYPE", "text/uri-list")
             == "text/uri-list"
         ):
-
             response = "OK\n"
 
             uris = [
