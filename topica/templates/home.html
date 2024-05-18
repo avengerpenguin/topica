@@ -1,38 +1,41 @@
 <!doctype html>
 
 <html>
-<head>
+  <head>
     <title>Topica</title>
-    <link rel="stylesheet"
-          href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.1/semantic.min.css"/>
-    <link rel="stylesheet"
-          href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.1/components/site.min.css"/>
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.1/semantic.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.0.1/components/site.min.css"
+    />
     <style>
-        body {
-            margin: 1em;
-        }
+      body {
+        margin: 1em;
+      }
     </style>
-</head>
-<body>
-<h1 class="ui header">Topica</h1>
+  </head>
+  <body>
+    <h1 class="ui header">Topica</h1>
 
-<div class="ui cards">
-    {% for cluster in clusters %}
-    <div class="card">
+    <div class="ui cards">
+      {% for cluster in clusters %}
+      <div class="card">
         <h2>Cluster {{cluster.pk}}</h2>
         <ul>
-            {% for item in cluster.item_set.all %}
-            <li><a href="{{ item.iri }}">{{ item.title }}</a></li>
-            {% endfor %}
+          {% for item in cluster.item_set.all %}
+          <li><a href="{{ item.iri }}">{{ item.title }}</a></li>
+          {% endfor %}
         </ul>
         <ol>
-            {% for tag, freq in cluster.top_tags %}
-            <li>{{ tag.name }} - {{ freq }}</li>
-            {% endfor %}
+          {% for tag, freq in cluster.top_tags %}
+          <li>{{ tag.name }} - {{ freq }}</li>
+          {% endfor %}
         </ol>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-</div>
-
-</body>
+  </body>
 </html>
